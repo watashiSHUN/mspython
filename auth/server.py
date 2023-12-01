@@ -29,6 +29,25 @@ class User(db.Model):
         return "<User %r>" % self.username
 
 
+@app.route("/validate", methods=["POST"])
+def validate():
+    encoded_jwt = request.headers.get("Authorization")
+    if not encoded_jwt:
+        return "missing authorization header", 401
+
+    # [0] = Bearer, [1] = token
+    encoded_jwt = encoded_jwt.split(" ")[1]
+
+    try:
+        decoded = jwt.decode(
+            encoded_jwt, os.environ.get("JWT_SECRET"), algorithms=["HS256"]
+        )
+    except:
+        return "not authorized", 403
+
+    return decoded, 200
+
+
 @app.route("/login", methods=["POST"])
 def login():
     # we can get authorization.username and authorization.password
