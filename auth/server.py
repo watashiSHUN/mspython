@@ -13,9 +13,11 @@ app = Flask(__name__)
 # mysql://username:password@localhost/db_name
 mysql_user = os.environ.get("MYSQL_USER")
 mysql_password = os.environ.get("MYSQL_PASSWORD")
+mysql_host = os.environ.get("MYSQL_HOST")
+# TODO SQLALCHEMY_DATABASE_URI is consumed by SQLAlchemy?
 app.config[
     "SQLALCHEMY_DATABASE_URI"
-] = f"mysql://{mysql_user}:{mysql_password}@localhost/auth"
+] = f"mysql://{mysql_user}:{mysql_password}@{mysql_host}/auth"
 db = SQLAlchemy(app)
 
 
@@ -37,6 +39,7 @@ def validate():
 
     # [0] = Bearer, [1] = token
     encoded_jwt = encoded_jwt.split(" ")[1]
+    print(encoded_jwt)
 
     try:
         decoded = jwt.decode(
