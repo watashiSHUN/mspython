@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 
+# TODO(shunxian): will this override environment set by "docker.manifest"
 load_dotenv()
 
 app = Flask(__name__)
@@ -39,7 +40,6 @@ def validate():
 
     # [0] = Bearer, [1] = token
     encoded_jwt = encoded_jwt.split(" ")[1]
-    print(encoded_jwt)
 
     try:
         decoded = jwt.decode(
