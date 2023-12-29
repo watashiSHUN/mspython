@@ -14,8 +14,11 @@ from storage import util
 server = Flask(__name__)
 # Use mongo DB to store document (data, which in this case is the video)
 # MONGO_URI is consumed by PyMongo
-# TODO replace it with localhost to test locally
-server.config["MONGO_URI"] = "mongodb://host.minikube.internal:27017/video"
+
+# TODO(shunxian): replace it with localhost to test locally
+mongo_host = os.environ.get("MONGO_HOST", "localhost")
+mongo_db = "video"
+server.config["MONGO_URI"] = f"mongodb://{mongo_host}:27017/{mongo_db}"
 
 mongo = PyMongo(server)
 
@@ -23,8 +26,10 @@ mongo = PyMongo(server)
 fs = gridfs.GridFS(mongo.db)
 
 # make synchronous communication with rabbit MQ
-# connection = pika.BlockingConnection(pika.ConnectionParameters(host="rabbitmq"))
-# channel = connection.channel()
+connection = pika.BlockingConnection(
+    pika.ConnectionParameters(host=os.environ.get("RABBITMQ_HOST", "rabbitmq-service"))
+)
+channel = connection.channel()
 
 
 # NOTE: we call auth service on behalf of the user
@@ -43,6 +48,7 @@ def login():
 # NOTE: first internally validate client authn/authz with auth service
 @server.route("/upload", methods=["POST"])
 def upload():
+    # NOTE: we use a function because we likely need to call this for every routes
     access, error = validate.token(request)
     # check authorization in the jwt claim
     # load convert json string to python dict(object)
@@ -57,11 +63,10 @@ def upload():
         return "exactly 1 file required", 400
 
     for _, f in request.files.items():
-        pass
-        # error = util.upload(f, fs, channel, access)
-        # if error:
-        #     # error is a tuple (message, status_code)
-        #     return error
+        error = util.upload(f, fs, channel, access)
+        if error:
+            # error is a tuple (message, status_code)
+            return error
 
     return "uploaded", 200
 
