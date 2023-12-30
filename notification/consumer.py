@@ -2,26 +2,14 @@ import os
 import sys
 import time
 
-import gridfs
+# only need access to rabbitmq, not mongodb
 import pika
 
 # user defined
-from convert import to_mp3
-from pymongo import MongoClient
+from send import gmail
 
 
 def main():
-    client = MongoClient("host.minikube.internal", 27017)
-    # mongodbs
-    # gateway.server output video files here
-    db_videos = client.video  # NOTE: this is the name of the database
-    # converter.consumer output mp3 files here
-    db_mp3s = client.mp3  # NOTE: this is the name of the database
-
-    # gridfs
-    fs_videos = gridfs.GridFS(db_videos)
-    fs_mp3s = gridfs.GridFS(db_mp3s)
-
     # make synchronous communication with rabbit MQ, see gateway/server.py
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
@@ -31,12 +19,7 @@ def main():
     channel = connection.channel()
 
     def callback(channel, method, properties, message_body):
-        # (1) Get video_id from message_body
-        # (2) Get video from mongodb
-        # (3) Convert video to mp3
-        # (4) Save mp3 to mongodb
-        # (5) enqueue a new message to rabbitmq
-        err = to_mp3.start(message_body, fs_videos, fs_mp3s, channel)
+        err = gmail.notify(message_body)
         # nack vs ack
         if err:
             channel.basic_nack(delivery_tag=method.delivery_tag)
@@ -45,7 +28,7 @@ def main():
 
     # When we receive the message, we call to_mp3.start to start converting
     channel.basic_consume(
-        queue=os.environ.get("VIDEO_QUEUE", "video"),
+        queue=os.environ.get("MP3_QUEUE", "mp3"),
         on_message_callback=callback,
     )
 
