@@ -26,6 +26,7 @@ mongo = PyMongo(server)
 fs = gridfs.GridFS(mongo.db)
 
 # make synchronous communication with rabbit MQ
+# TODO reconnect each time before enqueue a message, since the rabbitmq-service in k8s is not stable
 connection = pika.BlockingConnection(
     pika.ConnectionParameters(host=os.environ.get("RABBITMQ_HOST", "rabbitmq-service"))
 )
