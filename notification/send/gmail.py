@@ -33,6 +33,7 @@ def notify(message_body):
 
         # connect to google smtp server and login, then send email
         session = smtplib.SMTP("smtp.gmail.com")
+        # NOTE used for detailed debugging
         session.set_debuglevel(1)
         session.starttls()
         session.login(sender_address, sender_password)
@@ -43,6 +44,7 @@ def notify(message_body):
     except Exception as error:
         print("Mail failed to send")
         print(error)
+        # TODO move the error to error queue?
         return error
 
 
